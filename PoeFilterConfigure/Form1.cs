@@ -27,7 +27,9 @@ namespace PoeFilterConfigure
             DivineOnly,
         }
 
+        private const int c_version = 1;
         private const string c_PFCSTART = "#PFC-START";
+        private const string c_SHOWTAG = "PFCSHOW";
         private const string c_PFCEND = "#PFC-END";
         private bool m_initializing = false;
         private Dictionary<EquipmentClass, SelectionLevelRange> m_configuration = new();
@@ -43,13 +45,151 @@ namespace PoeFilterConfigure
             }
         }
 
+        void Scan(FileInfo fileInfo)
+        {
+            if (m_initializing == false)
+            {
+                throw new Exception("Can only call Scan() when initializing");
+            }
+
+            rbRingOff.Checked = true;
+            rbAmuletsOff.Checked = true;
+            rbBeltsOff.Checked = true;
+            rbShieldsOff.Checked = true;
+            rbWeaponsOff.Checked = true;
+            rbBodyOff.Checked = true;
+            rbBootsOff.Checked = true;
+            rbGlovesOff.Checked = true;
+            rbHelmetsOff.Checked = true;
+
+            lock (m_lock)
+            {
+                using StreamReader sr = new(fileInfo.FullName);
+                string? line = sr.ReadLine();
+                while (line != null)
+                {
+                    if (line.Contains(c_SHOWTAG))
+                    {
+                        string[] lineparts = line.Split(c_SHOWTAG, StringSplitOptions.TrimEntries);
+                        if (lineparts == null || lineparts.Length != 2)
+                        {
+                            throw new Exception($"Badly formed PFC line: {line}");
+                        }
+
+                        string[] defs = lineparts[1].Split(' ');
+                        if (defs == null || defs.Length != 2)
+                        {
+                            throw new Exception($"Badly formed PFC comment: {line}");
+                        }
+
+                        if (!Enum.TryParse(defs[1], out SelectionLevelRange selectionLevelRange))
+                        {
+                            throw new Exception($"Badly formed PFC selection level range: {defs[1]}");
+                        }
+
+                        if (selectionLevelRange != SelectionLevelRange.Any && selectionLevelRange != SelectionLevelRange.ChaosOnly && selectionLevelRange != SelectionLevelRange.DivineOnly)
+                        {
+                            throw new Exception($"Badly formed PFC selecton level range: {line}");
+                        }
+
+                        if (!Enum.TryParse(defs[0], out EquipmentClass equipClass))
+                        {
+                            throw new Exception($"Badly formed PFC equipment class: {defs[0]}");
+                        }
+
+                        m_configuration[equipClass] = selectionLevelRange;
+
+                        switch (equipClass)
+                        {
+                            case EquipmentClass.Rings:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbRingAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbRingChaos.Checked = true;
+                                else
+                                    rbRingDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Amulets:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbAmuletsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbAmuletsChaos.Checked = true;
+                                else
+                                    rbAmuletsDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Belts:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbBeltsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbBeltsChaos.Checked = true;
+                                else
+                                    rbBeltsDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Shields:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbShieldsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbShieldsChaos.Checked = true;
+                                else
+                                    rbShieldsDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Weapons:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbWeaponsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbWeaponsChaos.Checked = true;
+                                else
+                                    rbWeaponsDivine.Checked = true;
+                                break;
+                            case EquipmentClass.BodyArmors:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbBodyAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbBodyChaos.Checked = true;
+                                else
+                                    rbBodyDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Boots:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbBootsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbBootsChaos.Checked = true;
+                                else
+                                    rbBootsDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Gloves:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbGlovesAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbGlovesChaos.Checked = true;
+                                else
+                                    rbGlovesDivine.Checked = true;
+                                break;
+                            case EquipmentClass.Helmets:
+                                if (selectionLevelRange == SelectionLevelRange.Any)
+                                    rbHelmetsAny.Checked = true;
+                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                                    rbHelmetsChaos.Checked = true;
+                                else
+                                    rbHelmetsDivine.Checked = true;
+                                break;
+                            default:
+                                throw new Exception($"Unknown PFC equipment class: {equipClass}");
+                        }
+                    }
+
+                    line = sr.ReadLine();
+                }
+            }
+        }
+
         private void WriteFile(FileInfo fileInfo, string beforeLine, string ourFilters, string lineAndAfter)
         {
             using (StreamWriter sw = File.CreateText(fileInfo.FullName))
             {
                 sw.WriteLine(beforeLine.TrimEnd());
                 sw.WriteLine("");
-                sw.WriteLine(c_PFCSTART);
+                sw.WriteLine($"{c_PFCSTART} v {c_version}");
                 sw.WriteLine(ourFilters);
                 sw.WriteLine(c_PFCEND);
                 sw.WriteLine("");
@@ -62,7 +202,7 @@ namespace PoeFilterConfigure
             lock (m_lock)
             {
                 string ourFilters = GenerateFilters();
-                SplitFileAtLineContaining(fileInfo, "tier->raresendgame", out string beforeLine, out string lineAndAfter);
+                SplitFileAtLineContaining(fileInfo, "c6.rare.t4.all", out string beforeLine, out string lineAndAfter);
                 WriteFile(fileInfo, beforeLine, ourFilters, lineAndAfter);
             }
         }
@@ -70,25 +210,30 @@ namespace PoeFilterConfigure
         private string GenerateFilters()
         {
             StringBuilder sb = new();
-            AddFilter(sb, m_configuration[EquipmentClass.Rings], "\"Rings\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Amulets], "\"Amulets\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Belts], "\"Belts\"");
-            AddFilter(sb, m_configuration[EquipmentClass.BodyArmors], "\"Body Armours\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Boots], "\"Boots\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Gloves], "\"Gloves\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Helmets], "\"Helmets\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Shields], "\"Shields\"");
-            AddFilter(sb, m_configuration[EquipmentClass.Weapons], "\"Wands\" \"Daggers\" \"Claws\"");
+            AddFilter(sb, EquipmentClass.Rings, "\"Rings\"");
+            AddFilter(sb, EquipmentClass.Amulets, "\"Amulets\"");
+            AddFilter(sb, EquipmentClass.Belts, "\"Belts\"");
+            AddFilter(sb, EquipmentClass.BodyArmors, "\"Body Armours\"");
+            AddFilter(sb, EquipmentClass.Boots, "\"Boots\"");
+            AddFilter(sb, EquipmentClass.Gloves, "\"Gloves\"");
+            AddFilter(sb, EquipmentClass.Helmets, "\"Helmets\"");
+            AddFilter(sb, EquipmentClass.Shields, "\"Shields\"");
+            AddFilter(sb, EquipmentClass.Weapons, "\"Wands\" \"Daggers\" \"Claws\"");
             return sb.ToString();
         }
 
-        private void AddFilter(StringBuilder sb, SelectionLevelRange selectionLevelRange, string classText)
+        private void AddFilter(StringBuilder sb, EquipmentClass equipClass, string classText)
         {
+            if (!m_configuration.TryGetValue(equipClass, out SelectionLevelRange selectionLevelRange))
+            {
+                throw new Exception($"Uninitialized equipment class {equipClass}");
+            }
+
             if (selectionLevelRange == SelectionLevelRange.Off)
                 return;
 
             sb.AppendLine("");
-            sb.AppendLine("Show # PFC");
+            sb.AppendLine($"Show # {c_SHOWTAG} {equipClass} {selectionLevelRange}");
             sb.AppendLine("\tRarity Rare");
             sb.AppendLine($"\tClass == {classText}");
 
@@ -241,15 +386,13 @@ namespace PoeFilterConfigure
             m_initializing = true;
             InitializeComponent();
 
-            rbRingOff.Checked = true;
-            rbAmuletsOff.Checked = true;
-            rbBeltsOff.Checked = true;
-            rbShieldsOff.Checked = true;
-            rbWeaponsOff.Checked = true;
-            rbBodyOff.Checked = true;
-            rbBootsOff.Checked = true;
-            rbGlovesOff.Checked = true;
-            rbHelmetsOff.Checked = true;
+            FileInfo fileInfo = new FileInfo(labelFilePath.Text);
+            if (!fileInfo.Exists)
+            {
+                throw new Exception($"{fileInfo.FullName} does not exist");
+            }
+
+            Scan(fileInfo);
 
             m_initializing = false;
         }
