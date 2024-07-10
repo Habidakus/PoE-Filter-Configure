@@ -386,6 +386,10 @@ namespace PoeFilterConfigure
             m_initializing = true;
             InitializeComponent();
 
+            AllowDrop = true;
+            DragEnter += new DragEventHandler(DragEnterHandler);
+            DragDrop += new DragEventHandler(DragDropHandler);
+
             FileInfo fileInfo = new FileInfo(labelFilePath.Text);
             if (!fileInfo.Exists)
             {
@@ -395,6 +399,47 @@ namespace PoeFilterConfigure
             Scan(fileInfo);
 
             m_initializing = false;
+        }
+
+        private void DragEnterHandler(object? sender, DragEventArgs e)
+        {
+            FileInfo? fileInfo = GetValidFileInfoForFilterFile(e.Data);
+            if (fileInfo != null)
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+        }
+
+        private void DragDropHandler(object? sender, DragEventArgs e)
+        {
+            FileInfo? fileInfo = GetValidFileInfoForFilterFile(e.Data);
+            if (fileInfo != null)
+            {
+                labelFilePath.Text = fileInfo.FullName;
+                m_initializing = true;
+                Scan(fileInfo);
+                m_initializing = false;
+            }
+        }
+
+        private FileInfo? GetValidFileInfoForFilterFile(IDataObject? dataObject)
+        {
+            if (dataObject != null)
+            {
+                if (dataObject.GetData(DataFormats.FileDrop) is string[] fileNames)
+                {
+                    if (fileNames.Length == 1)
+                    {
+                        FileInfo fileInfo = new FileInfo(fileNames.First());
+                        if (fileInfo.Exists && fileInfo.Extension == ".filter")
+                        {
+                            return fileInfo;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         private void rbRings_CheckedChanged(object sender, EventArgs e)
