@@ -27,6 +27,87 @@ namespace PoeFilterConfigure
             DivineOnly,
         }
 
+        class CheckboxGroup
+        {
+            readonly Form1 _parent;
+            readonly EquipmentClass _equipmentClass;
+            readonly RadioButton _any;
+            readonly RadioButton _chaos;
+            readonly RadioButton _divine;
+            readonly RadioButton _off;
+
+            internal CheckboxGroup(Form1 parent, EquipmentClass equipmentClass, RadioButton any, RadioButton chaos, RadioButton divine, RadioButton off)
+            {
+                _parent = parent;
+                _equipmentClass = equipmentClass;
+                _any = any;
+                _chaos = chaos;
+                _divine = divine;
+                _off = off;
+
+                EnableButtons(false);
+            }
+
+            internal void OnCheck(RadioButton rb)
+            {
+                if (!rb.Checked)
+                {
+                    return;
+                }
+
+                if (rb == _any)
+                {
+                    _parent.Update(_equipmentClass, SelectionLevelRange.Any);
+                }
+                else if (rb == _chaos)
+                {
+                    _parent.Update(_equipmentClass, SelectionLevelRange.ChaosOnly);
+                }
+                else if (rb == _divine)
+                {
+                    _parent.Update(_equipmentClass, SelectionLevelRange.DivineOnly);
+                }
+                else if (rb == _off)
+                {
+                    _parent.Update(_equipmentClass, SelectionLevelRange.Off);
+                }
+                else
+                {
+                    throw new Exception($"Bad radio button {rb}");
+                }
+            }
+
+            internal void SetSelectionLevelRange(SelectionLevelRange selectionLevelRange)
+            {
+                if (selectionLevelRange == SelectionLevelRange.Any)
+                    _any.Checked = true;
+                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
+                    _chaos.Checked = true;
+                else if (selectionLevelRange == SelectionLevelRange.DivineOnly)
+                    _divine.Checked = true;
+                else
+                    _off.Checked = true;
+            }
+
+            private void EnableButtons(bool enabled)
+            {
+                _any.Enabled = enabled;
+                _chaos.Enabled = enabled;
+                _divine.Enabled = enabled;
+                _off.Enabled = enabled;
+            }
+
+            internal static void EnableButtons(CheckboxGroup[] groups)
+            {
+                foreach(CheckboxGroup group in groups)
+                {
+                    group.EnableButtons(true);
+                }
+            }
+        };
+
+        private Dictionary<EquipmentClass, CheckboxGroup> m_checkboxGroups;
+
         private const int c_version = 1;
         private const string c_PFCSTART = "#PFC-START";
         private const string c_SHOWTAG = "PFCSHOW";
@@ -61,6 +142,8 @@ namespace PoeFilterConfigure
             rbBootsOff.Checked = true;
             rbGlovesOff.Checked = true;
             rbHelmetsOff.Checked = true;
+            labelFilePath.ForeColor = Color.Black;
+            CheckboxGroup.EnableButtons(m_checkboxGroups.Values.ToArray());
 
             lock (m_lock)
             {
@@ -98,84 +181,7 @@ namespace PoeFilterConfigure
                         }
 
                         m_configuration[equipClass] = selectionLevelRange;
-
-                        switch (equipClass)
-                        {
-                            case EquipmentClass.Rings:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbRingAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbRingChaos.Checked = true;
-                                else
-                                    rbRingDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Amulets:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbAmuletsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbAmuletsChaos.Checked = true;
-                                else
-                                    rbAmuletsDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Belts:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbBeltsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbBeltsChaos.Checked = true;
-                                else
-                                    rbBeltsDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Shields:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbShieldsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbShieldsChaos.Checked = true;
-                                else
-                                    rbShieldsDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Weapons:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbWeaponsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbWeaponsChaos.Checked = true;
-                                else
-                                    rbWeaponsDivine.Checked = true;
-                                break;
-                            case EquipmentClass.BodyArmors:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbBodyAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbBodyChaos.Checked = true;
-                                else
-                                    rbBodyDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Boots:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbBootsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbBootsChaos.Checked = true;
-                                else
-                                    rbBootsDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Gloves:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbGlovesAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbGlovesChaos.Checked = true;
-                                else
-                                    rbGlovesDivine.Checked = true;
-                                break;
-                            case EquipmentClass.Helmets:
-                                if (selectionLevelRange == SelectionLevelRange.Any)
-                                    rbHelmetsAny.Checked = true;
-                                else if (selectionLevelRange == SelectionLevelRange.ChaosOnly)
-                                    rbHelmetsChaos.Checked = true;
-                                else
-                                    rbHelmetsDivine.Checked = true;
-                                break;
-                            default:
-                                throw new Exception($"Unknown PFC equipment class: {equipClass}");
-                        }
+                        m_checkboxGroups[equipClass].SetSelectionLevelRange(selectionLevelRange);
                     }
 
                     line = sr.ReadLine();
@@ -386,17 +392,33 @@ namespace PoeFilterConfigure
             m_initializing = true;
             InitializeComponent();
 
+            m_checkboxGroups = new() {
+                { EquipmentClass.Rings, new CheckboxGroup(this, EquipmentClass.Rings, rbRingAny, rbRingChaos, rbRingDivine, rbRingOff) },
+                { EquipmentClass.Amulets, new CheckboxGroup(this, EquipmentClass.Amulets, rbAmuletsAny, rbAmuletsChaos, rbAmuletsDivine, rbAmuletsOff) },
+                { EquipmentClass.Belts, new CheckboxGroup(this, EquipmentClass.Belts, rbBeltsAny, rbBeltsChaos, rbBeltsDivine, rbBeltsOff) },
+                { EquipmentClass.Shields, new CheckboxGroup(this, EquipmentClass.Shields, rbShieldsAny, rbShieldsChaos, rbShieldsDivine, rbShieldsOff) },
+                { EquipmentClass.Weapons, new CheckboxGroup(this, EquipmentClass.Weapons, rbWeaponsAny, rbWeaponsChaos, rbWeaponsDivine, rbWeaponsOff) },
+                { EquipmentClass.BodyArmors, new CheckboxGroup(this, EquipmentClass.BodyArmors, rbBodyAny, rbBodyChaos, rbBodyDivine, rbBodyOff) },
+                { EquipmentClass.Boots, new CheckboxGroup(this, EquipmentClass.Boots, rbBootsAny, rbBootsChaos, rbBootsDivine, rbBootsOff) },
+                { EquipmentClass.Gloves, new CheckboxGroup(this, EquipmentClass.Gloves, rbGlovesAny, rbGlovesChaos, rbGlovesDivine, rbGlovesOff) },
+                { EquipmentClass.Helmets, new CheckboxGroup(this, EquipmentClass.Helmets, rbHelmetsAny, rbHelmetsChaos, rbHelmetsDivine, rbHelmetsOff) },
+            };
+
+
             AllowDrop = true;
             DragEnter += new DragEventHandler(DragEnterHandler);
             DragDrop += new DragEventHandler(DragDropHandler);
 
             FileInfo fileInfo = new FileInfo(labelFilePath.Text);
-            if (!fileInfo.Exists)
+            if (fileInfo.Exists)
             {
-                throw new Exception($"{fileInfo.FullName} does not exist");
+                Scan(fileInfo);
             }
-
-            Scan(fileInfo);
+            else
+            {
+                labelFilePath.Text = "(Drag filter file HERE)";
+                labelFilePath.ForeColor = Color.Green;
+            }
 
             m_initializing = false;
         }
@@ -446,14 +468,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbRingAny) { Update(EquipmentClass.Rings, SelectionLevelRange.Any); }
-                    else if (rb == rbRingChaos) { Update(EquipmentClass.Rings, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbRingDivine) { Update(EquipmentClass.Rings, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbRingOff) { Update(EquipmentClass.Rings, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Rings].OnCheck(rb);
             }
         }
 
@@ -461,14 +476,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbAmuletsAny) { Update(EquipmentClass.Amulets, SelectionLevelRange.Any); }
-                    else if (rb == rbAmuletsChaos) { Update(EquipmentClass.Amulets, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbAmuletsDivine) { Update(EquipmentClass.Amulets, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbAmuletsOff) { Update(EquipmentClass.Amulets, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Amulets].OnCheck(rb);
             }
         }
 
@@ -476,14 +484,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbBeltsAny) { Update(EquipmentClass.Belts, SelectionLevelRange.Any); }
-                    else if (rb == rbBeltsChaos) { Update(EquipmentClass.Belts, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbBeltsDivine) { Update(EquipmentClass.Belts, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbBeltsOff) { Update(EquipmentClass.Belts, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Belts].OnCheck(rb);
             }
         }
 
@@ -491,14 +492,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbShieldsAny) { Update(EquipmentClass.Shields, SelectionLevelRange.Any); }
-                    else if (rb == rbShieldsChaos) { Update(EquipmentClass.Shields, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbShieldsDivine) { Update(EquipmentClass.Shields, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbShieldsOff) { Update(EquipmentClass.Shields, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Shields].OnCheck(rb);
             }
         }
 
@@ -506,14 +500,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbWeaponsAny) { Update(EquipmentClass.Weapons, SelectionLevelRange.Any); }
-                    else if (rb == rbWeaponsChaos) { Update(EquipmentClass.Weapons, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbWeaponsDivine) { Update(EquipmentClass.Weapons, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbWeaponsOff) { Update(EquipmentClass.Weapons, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Weapons].OnCheck(rb);
             }
         }
 
@@ -521,14 +508,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbBodyAny) { Update(EquipmentClass.BodyArmors, SelectionLevelRange.Any); }
-                    else if (rb == rbBodyChaos) { Update(EquipmentClass.BodyArmors, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbBodyDivine) { Update(EquipmentClass.BodyArmors, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbBodyOff) { Update(EquipmentClass.BodyArmors, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.BodyArmors].OnCheck(rb);
             }
         }
 
@@ -536,14 +516,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbBootsAny) { Update(EquipmentClass.Boots, SelectionLevelRange.Any); }
-                    else if (rb == rbBootsChaos) { Update(EquipmentClass.Boots, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbBootsDivine) { Update(EquipmentClass.Boots, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbBootsOff) { Update(EquipmentClass.Boots, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Boots].OnCheck(rb);
             }
         }
 
@@ -551,14 +524,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbGlovesAny) { Update(EquipmentClass.Gloves, SelectionLevelRange.Any); }
-                    else if (rb == rbGlovesChaos) { Update(EquipmentClass.Gloves, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbGlovesDivine) { Update(EquipmentClass.Gloves, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbGlovesOff) { Update(EquipmentClass.Gloves, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Gloves].OnCheck(rb);
             }
         }
 
@@ -566,14 +532,7 @@ namespace PoeFilterConfigure
         {
             if (sender is RadioButton rb)
             {
-                if (rb.Checked)
-                {
-                    if (rb == rbHelmetsAny) { Update(EquipmentClass.Helmets, SelectionLevelRange.Any); }
-                    else if (rb == rbHelmetsChaos) { Update(EquipmentClass.Helmets, SelectionLevelRange.ChaosOnly); }
-                    else if (rb == rbHelmetsDivine) { Update(EquipmentClass.Helmets, SelectionLevelRange.DivineOnly); }
-                    else if (rb == rbHelmetsOff) { Update(EquipmentClass.Helmets, SelectionLevelRange.Off); }
-                    else throw new Exception($"Bad radio button {rb}");
-                }
+                m_checkboxGroups[EquipmentClass.Helmets].OnCheck(rb);
             }
         }
     }

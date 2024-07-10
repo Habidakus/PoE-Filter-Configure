@@ -642,7 +642,7 @@
             labelFilePath.Name = "labelFilePath";
             labelFilePath.Size = new Size(620, 20);
             labelFilePath.TabIndex = 10;
-            labelFilePath.Text = "C:\\Users\\woeba\\Documents\\My Games\\Path of Exile\\NeverSink's filter - 4-VERY-STRICT.filter";
+            labelFilePath.Text = "C:\\Users\\tuba\\Documents\\My Games\\Path of Exile\\NeverSink's filter - 4-VERY-STRICT.filter";
             // 
             // Form1
             // 
