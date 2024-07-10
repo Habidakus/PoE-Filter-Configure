@@ -404,6 +404,7 @@ namespace PoeFilterConfigure
                 { EquipmentClass.Helmets, new CheckboxGroup(this, EquipmentClass.Helmets, rbHelmetsAny, rbHelmetsChaos, rbHelmetsDivine, rbHelmetsOff) },
             };
 
+            ReadUserProfile();
 
             AllowDrop = true;
             DragEnter += new DragEventHandler(DragEnterHandler);
@@ -423,6 +424,69 @@ namespace PoeFilterConfigure
             m_initializing = false;
         }
 
+        private FileInfo ConfigFilePath
+        {
+            get
+            {
+                string userRoamingPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                return new(Path.Combine(userRoamingPath, "PoeFilterConfigure", "config.txt"));
+            }
+        }
+
+        private void ReadUserProfile()
+        {
+            FileInfo configFilePath = ConfigFilePath;
+            if (!configFilePath.Exists)
+            {
+                return;
+            }
+
+            using StreamReader sr = new(configFilePath.FullName);
+            if (!(sr.ReadLine() is string configurationLine))
+            {
+                return;
+            }
+
+            if (!int.TryParse(configurationLine, out int configurationVersion))
+            {
+                return;
+            }
+
+            if (configurationVersion != c_version)
+            {
+                return;
+            }
+
+            if (!(sr.ReadLine() is string fileLine))
+            {
+                return;
+            }
+
+            FileInfo fileInfo = new FileInfo(fileLine);
+            if (fileInfo.Exists) 
+            {
+                labelFilePath.Text = fileInfo.FullName;
+            }
+        }
+
+        private void WriteUserProfile()
+        {
+            DirectoryInfo? configDirectory = ConfigFilePath.Directory;
+            if (configDirectory == null)
+            {
+                throw new Exception($"Failed to find directory for {ConfigFilePath.FullName}");
+            }
+
+            if (!configDirectory.Exists)
+            {
+                configDirectory.Create();
+            }
+
+            using StreamWriter sw = new(ConfigFilePath.FullName);
+            sw.WriteLine($"{c_version}");
+            sw.WriteLine(labelFilePath.Text);
+        }
+
         private void DragEnterHandler(object? sender, DragEventArgs e)
         {
             FileInfo? fileInfo = GetValidFileInfoForFilterFile(e.Data);
@@ -438,6 +502,8 @@ namespace PoeFilterConfigure
             if (fileInfo != null)
             {
                 labelFilePath.Text = fileInfo.FullName;
+                WriteUserProfile();
+
                 m_initializing = true;
                 Scan(fileInfo);
                 m_initializing = false;
