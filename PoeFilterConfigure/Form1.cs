@@ -1,11 +1,78 @@
 #pragma warning disable IDE1006 // Naming Styles
 
+using System.Security.Principal;
 using System.Text;
 
 namespace PoeFilterConfigure
 {
     public partial class Form1 : Form
     {
+        public Form1()
+        {
+            m_initializing = true;
+            InitializeComponent();
+
+            Dictionary<RadioButton, CellsSelection> shieldCellSelection = new()
+            {
+                { rbShields4Cells, new CellsSelection(4, 4) },
+                { rbShields6Cells, new CellsSelection(4, 6) },
+                { rbShields8Cells, new CellsSelection(4, 8) },
+            };
+
+            Dictionary<RadioButton, CellsSelection> weaponCellSelection = new() 
+            {
+                { rbWeapons3Cells, new CellsSelection(3, 3) },
+                { rbWeapons4Cells, new CellsSelection(3, 4) },
+                { rbWeapons6Cells, new CellsSelection(3, 6) },
+                { rbWeapons8Cells, new CellsSelection(3, 8) },
+            };
+
+            m_checkboxGroups = new()
+            {
+                { EquipmentClass.Rings, new CheckboxGroup(this, EquipmentClass.Rings, rbRingAny, rbRingChaos, rbRingDivine, rbRingOff) },
+                { EquipmentClass.Amulets, new CheckboxGroup(this, EquipmentClass.Amulets, rbAmuletsAny, rbAmuletsChaos, rbAmuletsDivine, rbAmuletsOff) },
+                { EquipmentClass.Belts, new CheckboxGroup(this, EquipmentClass.Belts, rbBeltsAny, rbBeltsChaos, rbBeltsDivine, rbBeltsOff) },
+                { EquipmentClass.BodyArmors, new CheckboxGroup(this, EquipmentClass.BodyArmors, rbBodyAny, rbBodyChaos, rbBodyDivine, rbBodyOff) },
+                { EquipmentClass.Boots, new CheckboxGroup(this, EquipmentClass.Boots, rbBootsAny, rbBootsChaos, rbBootsDivine, rbBootsOff) },
+                { EquipmentClass.Gloves, new CheckboxGroup(this, EquipmentClass.Gloves, rbGlovesAny, rbGlovesChaos, rbGlovesDivine, rbGlovesOff) },
+                { EquipmentClass.Helmets, new CheckboxGroup(this, EquipmentClass.Helmets, rbHelmetsAny, rbHelmetsChaos, rbHelmetsDivine, rbHelmetsOff) },
+                {
+                    EquipmentClass.Shields,
+                    new CheckboxGroup(this, EquipmentClass.Shields, rbShieldsAny, rbShieldsChaos, rbShieldsDivine, rbShieldsOff, shieldCellSelection)
+                },
+                {
+                    EquipmentClass.Weapons,
+                    new CheckboxGroup(this, EquipmentClass.Weapons, rbWeaponsAny, rbWeaponsChaos, rbWeaponsDivine, rbWeaponsOff, weaponCellSelection)
+                },
+            };
+
+            ReadUserProfile();
+
+            AllowDrop = true;
+            DragEnter += new DragEventHandler(DragEnterHandler);
+            DragDrop += new DragEventHandler(DragDropHandler);
+
+            FileInfo fileInfo = new FileInfo(labelFilePath.Text);
+            if (fileInfo.Exists)
+            {
+                try
+                {
+                    Scan(fileInfo);
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.Message);
+                }
+            }
+            else
+            {
+                labelFilePath.Text = "(Drag filter file HERE)";
+                labelFilePath.ForeColor = Color.Green;
+            }
+
+            m_initializing = false;
+        }
+
         enum EquipmentClass
         {
             Rings,
@@ -27,6 +94,41 @@ namespace PoeFilterConfigure
             DivineOnly,
         }
 
+        class CellsSelection
+        {
+            readonly int _min;
+            readonly int _max;
+            internal CellsSelection(int min, int cells) { _min = min; _max = cells; }
+            public int Count { get { return _max; } }
+            public IEnumerable<Tuple<int, string>> Dimensions
+            {
+                get
+                {
+                    if (_min <= 3 && _max >= 3)
+                    {
+                        yield return Tuple.Create(3, "\tWidth 1\n\tHeight 3");
+                    }
+
+                    if (_min <= 4 && _max >= 4)
+                    {
+                        yield return Tuple.Create(4, "\tWidth 2\n\tHeight 2");
+                    }
+
+                    if (_min <= 6 && _max >= 6)
+                    {
+                        yield return Tuple.Create(6, "\tWidth 2\n\tHeight 3");
+                    }
+
+                    if (_min <= 8 && _max >= 8)
+                    {
+                        yield return Tuple.Create(8, "\tWidth 2\n\tHeight 4");
+                    }
+
+                    yield break;
+                }
+            }
+        }
+
         class CheckboxGroup
         {
             readonly Form1 _parent;
@@ -35,8 +137,9 @@ namespace PoeFilterConfigure
             readonly RadioButton _chaos;
             readonly RadioButton _divine;
             readonly RadioButton _off;
+            readonly Dictionary<RadioButton, CellsSelection>? _cellsSelections;
 
-            internal CheckboxGroup(Form1 parent, EquipmentClass equipmentClass, RadioButton any, RadioButton chaos, RadioButton divine, RadioButton off)
+            internal CheckboxGroup(Form1 parent, EquipmentClass equipmentClass, RadioButton any, RadioButton chaos, RadioButton divine, RadioButton off, Dictionary<RadioButton, CellsSelection>? cellsSelections = null)
             {
                 _parent = parent;
                 _equipmentClass = equipmentClass;
@@ -44,8 +147,52 @@ namespace PoeFilterConfigure
                 _chaos = chaos;
                 _divine = divine;
                 _off = off;
+                _cellsSelections = cellsSelections;
 
                 EnableButtons(false);
+            }
+
+            internal Tuple<RadioButton, CellsSelection> GetCellSelection(int cells)
+            {
+                if (_cellsSelections == null)
+                    throw new Exception($"Can not query {_equipmentClass} for cell selections");
+
+                KeyValuePair<RadioButton, CellsSelection>[] match = _cellsSelections.Where(a => a.Value.Count == cells).ToArray();
+                if (match.Length == 0)
+                    throw new Exception($"No entry in {_equipmentClass} with a cell count of {cells}");
+                else if (match.Length > 1)
+                    throw new Exception($"Multiple entries in {_equipmentClass} with a cell count of {cells}");
+
+                return Tuple.Create(match[0].Key, match[0].Value);
+            }
+
+            internal void OnCellsCheck(RadioButton rb)
+            {
+                if (!rb.Checked)
+                {
+                    return;
+                }
+
+                try
+                {
+                    if (_cellsSelections == null)
+                    {
+                        throw new Exception($"No cell selection set defined for {_equipmentClass}");
+                    }
+
+                    if (_cellsSelections.TryGetValue(rb, out CellsSelection? selection))
+                    {
+                        _parent.UpdateCells(_equipmentClass, selection);
+                    }
+                    else
+                    {
+                        throw new Exception($"No cell selection defined for radio button {rb.Name}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.Message);
+                }
             }
 
             internal void OnCheck(RadioButton rb)
@@ -55,25 +202,32 @@ namespace PoeFilterConfigure
                     return;
                 }
 
-                if (rb == _any)
+                try
                 {
-                    _parent.Update(_equipmentClass, SelectionLevelRange.Any);
+                    if (rb == _any)
+                    {
+                        _parent.Update(_equipmentClass, SelectionLevelRange.Any);
+                    }
+                    else if (rb == _chaos)
+                    {
+                        _parent.Update(_equipmentClass, SelectionLevelRange.ChaosOnly);
+                    }
+                    else if (rb == _divine)
+                    {
+                        _parent.Update(_equipmentClass, SelectionLevelRange.DivineOnly);
+                    }
+                    else if (rb == _off)
+                    {
+                        _parent.Update(_equipmentClass, SelectionLevelRange.Off);
+                    }
+                    else
+                    {
+                        throw new Exception($"Bad radio button {rb}");
+                    }
                 }
-                else if (rb == _chaos)
+                catch (Exception e)
                 {
-                    _parent.Update(_equipmentClass, SelectionLevelRange.ChaosOnly);
-                }
-                else if (rb == _divine)
-                {
-                    _parent.Update(_equipmentClass, SelectionLevelRange.DivineOnly);
-                }
-                else if (rb == _off)
-                {
-                    _parent.Update(_equipmentClass, SelectionLevelRange.Off);
-                }
-                else
-                {
-                    throw new Exception($"Bad radio button {rb}");
+                    MessageBox.Show(e.Message);
                 }
             }
 
@@ -99,21 +253,22 @@ namespace PoeFilterConfigure
 
             internal static void EnableButtons(CheckboxGroup[] groups)
             {
-                foreach(CheckboxGroup group in groups)
+                foreach (CheckboxGroup group in groups)
                 {
                     group.EnableButtons(true);
                 }
             }
         };
 
-        private Dictionary<EquipmentClass, CheckboxGroup> m_checkboxGroups;
-
         private const int c_version = 1;
         private const string c_PFCSTART = "#PFC-START";
         private const string c_SHOWTAG = "PFCSHOW";
         private const string c_PFCEND = "#PFC-END";
+
         private bool m_initializing = false;
-        private Dictionary<EquipmentClass, SelectionLevelRange> m_configuration = new();
+        private Dictionary<EquipmentClass, CheckboxGroup> m_checkboxGroups;
+        private Dictionary<EquipmentClass, SelectionLevelRange> m_selectionLevelRangeConfiguration = new();
+        private Dictionary<EquipmentClass, CellsSelection> m_cellSelectionConfiguration = new();
         private object m_lock = new();
 
         void Update(FileInfo fileInfo)
@@ -142,6 +297,8 @@ namespace PoeFilterConfigure
             rbBootsOff.Checked = true;
             rbGlovesOff.Checked = true;
             rbHelmetsOff.Checked = true;
+            rbShields4Cells.Checked = true;
+            rbWeapons3Cells.Checked = true;
             labelFilePath.ForeColor = Color.Black;
             CheckboxGroup.EnableButtons(m_checkboxGroups.Values.ToArray());
 
@@ -160,7 +317,7 @@ namespace PoeFilterConfigure
                         }
 
                         string[] defs = lineparts[1].Split(' ');
-                        if (defs == null || defs.Length != 2)
+                        if (defs == null || defs.Length < 2 || defs.Length > 3)
                         {
                             throw new Exception($"Badly formed PFC comment: {line}");
                         }
@@ -180,8 +337,23 @@ namespace PoeFilterConfigure
                             throw new Exception($"Badly formed PFC equipment class: {defs[0]}");
                         }
 
-                        m_configuration[equipClass] = selectionLevelRange;
+                        m_selectionLevelRangeConfiguration[equipClass] = selectionLevelRange;
                         m_checkboxGroups[equipClass].SetSelectionLevelRange(selectionLevelRange);
+
+                        if (defs.Length == 3)
+                        {
+                            if (equipClass == EquipmentClass.Shields || equipClass == EquipmentClass.Weapons)
+                            {
+                                if (!int.TryParse(defs[2], out int cells))
+                                {
+                                    throw new Exception($"Bad cell count: {line}");
+                                }
+
+                                Tuple<RadioButton, CellsSelection> match = m_checkboxGroups[equipClass].GetCellSelection(cells);
+                                match.Item1.Checked = true;
+                                m_cellSelectionConfiguration[equipClass] = match.Item2;
+                            }
+                        }
                     }
 
                     line = sr.ReadLine();
@@ -201,6 +373,18 @@ namespace PoeFilterConfigure
                 sw.WriteLine("");
                 sw.Write(lineAndAfter.TrimStart());
             }
+
+            var accessControl = fileInfo.GetAccessControl();
+            string accountName = WindowsIdentity.GetCurrent().Name;
+            System.Security.AccessControl.FileSystemAccessRule rule = 
+                new System.Security.AccessControl.FileSystemAccessRule(
+                    accountName,
+                    System.Security.AccessControl.FileSystemRights.Modify,
+                    System.Security.AccessControl.AccessControlType.Allow);
+            accessControl.AddAccessRule(rule);
+            fileInfo.SetAccessControl(accessControl);
+
+            //File.SetUnixFileMode(fileInfo.FullName, UnixFileMode.UserWrite | UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.GroupWrite);
         }
 
         void Create(FileInfo fileInfo)
@@ -216,32 +400,63 @@ namespace PoeFilterConfigure
         private string GenerateFilters()
         {
             StringBuilder sb = new();
-            AddFilter(sb, EquipmentClass.Rings, "\"Rings\"");
-            AddFilter(sb, EquipmentClass.Amulets, "\"Amulets\"");
-            AddFilter(sb, EquipmentClass.Belts, "\"Belts\"");
-            AddFilter(sb, EquipmentClass.BodyArmors, "\"Body Armours\"");
-            AddFilter(sb, EquipmentClass.Boots, "\"Boots\"");
-            AddFilter(sb, EquipmentClass.Gloves, "\"Gloves\"");
-            AddFilter(sb, EquipmentClass.Helmets, "\"Helmets\"");
-            AddFilter(sb, EquipmentClass.Shields, "\"Shields\"");
-            AddFilter(sb, EquipmentClass.Weapons, "\"Wands\" \"Daggers\" \"Claws\"");
+            AddFilters(sb, EquipmentClass.Rings, "\"Rings\"");
+            AddFilters(sb, EquipmentClass.Amulets, "\"Amulets\"");
+            AddFilters(sb, EquipmentClass.Belts, "\"Belts\"");
+            AddFilters(sb, EquipmentClass.BodyArmors, "\"Body Armours\"");
+            AddFilters(sb, EquipmentClass.Boots, "\"Boots\"");
+            AddFilters(sb, EquipmentClass.Gloves, "\"Gloves\"");
+            AddFilters(sb, EquipmentClass.Helmets, "\"Helmets\"");
+            AddFilters(sb, EquipmentClass.Shields, "\"Shields\"");
+            AddFilters(sb, EquipmentClass.Weapons, "\"Bows\" \"Claws\" \"Daggers\" \"One Hand Axes\" \"One Hand Maces\" \"One Hand Swords\" \"Rune Daggers\" \"Sceptres\" \"Staves\" \"Thrusting One Hand Swords\" \"Two Hand Axes\" \"Two Hand Maces\" \"Two Hand Swords\" \"Wands\" \"Warstaves\"");
             return sb.ToString();
         }
 
-        private void AddFilter(StringBuilder sb, EquipmentClass equipClass, string classText)
+        private void AddFilters(StringBuilder sb, EquipmentClass equipClass, string classText)
         {
-            if (!m_configuration.TryGetValue(equipClass, out SelectionLevelRange selectionLevelRange))
+            if (!m_selectionLevelRangeConfiguration.TryGetValue(equipClass, out SelectionLevelRange selectionLevelRange))
             {
                 throw new Exception($"Uninitialized equipment class {equipClass}");
             }
 
             if (selectionLevelRange == SelectionLevelRange.Off)
+            {
                 return;
+            }
 
+            if (m_cellSelectionConfiguration.TryGetValue(equipClass, out CellsSelection? cellsSelection))
+            {
+                foreach (Tuple<int, string> dimensions in cellsSelection.Dimensions)
+                {
+                    AddFilter(sb, equipClass, classText, selectionLevelRange, dimensions);
+                }
+            }
+            else
+            {
+                AddFilter(sb, equipClass, classText, selectionLevelRange, null);
+            }
+        }
+
+        private static void AddFilter(StringBuilder sb, EquipmentClass equipClass, string classText, SelectionLevelRange selectionLevelRange, Tuple<int, string>? dimensions)
+        {
             sb.AppendLine("");
-            sb.AppendLine($"Show # {c_SHOWTAG} {equipClass} {selectionLevelRange}");
+
+            if (dimensions != null)
+            {
+                sb.AppendLine($"Show # {c_SHOWTAG} {equipClass} {selectionLevelRange} {dimensions.Item1}");
+            }
+            else
+            {
+                sb.AppendLine($"Show # {c_SHOWTAG} {equipClass} {selectionLevelRange}");
+            }
+
             sb.AppendLine("\tRarity Rare");
             sb.AppendLine($"\tClass == {classText}");
+
+            if (dimensions != null)
+            {
+                sb.AppendLine(dimensions.Item2);
+            }
 
             if (selectionLevelRange == SelectionLevelRange.DivineOnly)
             {
@@ -339,8 +554,8 @@ namespace PoeFilterConfigure
         void Backup(FileInfo fileInfo)
         {
             var filenameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
-            var backupPath =  $"{fileInfo.DirectoryName}/{filenameWithoutExtension}_pfc{fileInfo.Extension}";
-            
+            var backupPath = $"{fileInfo.DirectoryName}/{filenameWithoutExtension}_pfc{fileInfo.Extension}";
+
             FileInfo backupInfo = new FileInfo(backupPath);
             if (!backupInfo.Exists)
             {
@@ -348,80 +563,50 @@ namespace PoeFilterConfigure
             }
         }
 
-        void Update(EquipmentClass equipmentClass, SelectionLevelRange selectionLevelRange)
+        private void WriteFile()
         {
-            try
-            {
-                m_configuration[equipmentClass] = selectionLevelRange;
-                if (m_initializing)
-                    return;
-
-                FileInfo fileInfo = new FileInfo(labelFilePath.Text);
-                if (!fileInfo.Exists)
-                {
-                    throw new Exception($"{fileInfo.FullName} does not exist");
-                }
-
-                string fileContents;
-                using (StreamReader sr = new(fileInfo.FullName))
-                {
-                    fileContents = sr.ReadToEnd();
-                }
-
-                if (fileContents.Length < 10)
-                    throw new Exception($"{labelFilePath.Text} is pretty short");
-
-                if (!fileContents.Contains(c_PFCSTART))
-                {
-                    Backup(fileInfo);
-                    Create(fileInfo);
-                }
-                else
-                {
-                    Update(fileInfo);
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-            }
-        }
-
-        public Form1()
-        {
-            m_initializing = true;
-            InitializeComponent();
-
-            m_checkboxGroups = new() {
-                { EquipmentClass.Rings, new CheckboxGroup(this, EquipmentClass.Rings, rbRingAny, rbRingChaos, rbRingDivine, rbRingOff) },
-                { EquipmentClass.Amulets, new CheckboxGroup(this, EquipmentClass.Amulets, rbAmuletsAny, rbAmuletsChaos, rbAmuletsDivine, rbAmuletsOff) },
-                { EquipmentClass.Belts, new CheckboxGroup(this, EquipmentClass.Belts, rbBeltsAny, rbBeltsChaos, rbBeltsDivine, rbBeltsOff) },
-                { EquipmentClass.Shields, new CheckboxGroup(this, EquipmentClass.Shields, rbShieldsAny, rbShieldsChaos, rbShieldsDivine, rbShieldsOff) },
-                { EquipmentClass.Weapons, new CheckboxGroup(this, EquipmentClass.Weapons, rbWeaponsAny, rbWeaponsChaos, rbWeaponsDivine, rbWeaponsOff) },
-                { EquipmentClass.BodyArmors, new CheckboxGroup(this, EquipmentClass.BodyArmors, rbBodyAny, rbBodyChaos, rbBodyDivine, rbBodyOff) },
-                { EquipmentClass.Boots, new CheckboxGroup(this, EquipmentClass.Boots, rbBootsAny, rbBootsChaos, rbBootsDivine, rbBootsOff) },
-                { EquipmentClass.Gloves, new CheckboxGroup(this, EquipmentClass.Gloves, rbGlovesAny, rbGlovesChaos, rbGlovesDivine, rbGlovesOff) },
-                { EquipmentClass.Helmets, new CheckboxGroup(this, EquipmentClass.Helmets, rbHelmetsAny, rbHelmetsChaos, rbHelmetsDivine, rbHelmetsOff) },
-            };
-
-            ReadUserProfile();
-
-            AllowDrop = true;
-            DragEnter += new DragEventHandler(DragEnterHandler);
-            DragDrop += new DragEventHandler(DragDropHandler);
-
             FileInfo fileInfo = new FileInfo(labelFilePath.Text);
-            if (fileInfo.Exists)
+            if (!fileInfo.Exists)
             {
-                Scan(fileInfo);
+                throw new Exception($"{fileInfo.FullName} does not exist");
+            }
+
+            string fileContents;
+            using (StreamReader sr = new(fileInfo.FullName))
+            {
+                fileContents = sr.ReadToEnd();
+            }
+
+            if (fileContents.Length < 10)
+                throw new Exception($"{labelFilePath.Text} is pretty short");
+
+            if (!fileContents.Contains(c_PFCSTART))
+            {
+                Backup(fileInfo);
+                Create(fileInfo);
             }
             else
             {
-                labelFilePath.Text = "(Drag filter file HERE)";
-                labelFilePath.ForeColor = Color.Green;
+                Update(fileInfo);
             }
+        }
 
-            m_initializing = false;
+        void Update(EquipmentClass equipmentClass, SelectionLevelRange selectionLevelRange)
+        {
+            m_selectionLevelRangeConfiguration[equipmentClass] = selectionLevelRange;
+            if (m_initializing)
+                return;
+
+            WriteFile();
+        }
+
+        private void UpdateCells(EquipmentClass equipmentClass, CellsSelection selection)
+        {
+            m_cellSelectionConfiguration[equipmentClass] = selection;
+            if (m_initializing)
+                return;
+
+            WriteFile();
         }
 
         private FileInfo ConfigFilePath
@@ -463,7 +648,7 @@ namespace PoeFilterConfigure
             }
 
             FileInfo fileInfo = new FileInfo(fileLine);
-            if (fileInfo.Exists) 
+            if (fileInfo.Exists)
             {
                 labelFilePath.Text = fileInfo.FullName;
             }
@@ -554,22 +739,6 @@ namespace PoeFilterConfigure
             }
         }
 
-        private void rbShields_CheckedChanged(object sender, EventArgs e)
-        {
-            if (sender is RadioButton rb)
-            {
-                m_checkboxGroups[EquipmentClass.Shields].OnCheck(rb);
-            }
-        }
-
-        private void rbWeapons_CheckedChanged(object sender, EventArgs e)
-        {
-            if (sender is RadioButton rb)
-            {
-                m_checkboxGroups[EquipmentClass.Weapons].OnCheck(rb);
-            }
-        }
-
         private void rbChest_CheckedChanged(object sender, EventArgs e)
         {
             if (sender is RadioButton rb)
@@ -600,6 +769,39 @@ namespace PoeFilterConfigure
             {
                 m_checkboxGroups[EquipmentClass.Helmets].OnCheck(rb);
             }
+        }
+
+        private void rbShields_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton rb)
+            {
+                m_checkboxGroups[EquipmentClass.Shields].OnCheck(rb);
+            }
+        }
+
+        private void rbShields_CellsCheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton rb)
+            {
+                m_checkboxGroups[EquipmentClass.Shields].OnCellsCheck(rb);
+            }
+        }
+
+        private void rbWeapons_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton rb)
+            {
+                m_checkboxGroups[EquipmentClass.Weapons].OnCheck(rb);
+            }
+        }
+
+        private void rbWeapons_CellsCheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton rb)
+            {
+                m_checkboxGroups[EquipmentClass.Weapons].OnCellsCheck(rb);
+            }
+
         }
     }
 }

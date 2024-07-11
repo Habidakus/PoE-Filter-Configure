@@ -39,6 +39,10 @@
             rbAmuletsAny = new RadioButton();
             rbAmuletsDivine = new RadioButton();
             groupShields = new GroupBox();
+            cellShields = new Panel();
+            rbShields4Cells = new RadioButton();
+            rbShields6Cells = new RadioButton();
+            rbShields8Cells = new RadioButton();
             rbShieldsOff = new RadioButton();
             rbShieldsChaos = new RadioButton();
             rbShieldsAny = new RadioButton();
@@ -73,16 +77,23 @@
             rbWeaponsChaos = new RadioButton();
             rbWeaponsAny = new RadioButton();
             rbWeaponsDivine = new RadioButton();
+            cellWeapons = new Panel();
+            rbWeapons3Cells = new RadioButton();
+            rbWeapons4Cells = new RadioButton();
+            rbWeapons6Cells = new RadioButton();
+            rbWeapons8Cells = new RadioButton();
             labelFilePath = new Label();
             groupRing.SuspendLayout();
             groupAmulets.SuspendLayout();
             groupShields.SuspendLayout();
+            cellShields.SuspendLayout();
             groupBelts.SuspendLayout();
             groupBoots.SuspendLayout();
             groupHelmets.SuspendLayout();
             groupGloves.SuspendLayout();
             groupBody.SuspendLayout();
             groupWeapons.SuspendLayout();
+            cellWeapons.SuspendLayout();
             SuspendLayout();
             // 
             // groupRing
@@ -209,16 +220,64 @@
             // 
             // groupShields
             // 
+            groupShields.Controls.Add(cellShields);
             groupShields.Controls.Add(rbShieldsOff);
             groupShields.Controls.Add(rbShieldsChaos);
             groupShields.Controls.Add(rbShieldsAny);
             groupShields.Controls.Add(rbShieldsDivine);
-            groupShields.Location = new Point(285, 75);
+            groupShields.Location = new Point(376, 75);
             groupShields.Name = "groupShields";
-            groupShields.Size = new Size(85, 138);
+            groupShields.Size = new Size(108, 282);
             groupShields.TabIndex = 6;
             groupShields.TabStop = false;
             groupShields.Text = "Shields";
+            // 
+            // cellShields
+            // 
+            cellShields.BackColor = SystemColors.ControlLight;
+            cellShields.Controls.Add(rbShields4Cells);
+            cellShields.Controls.Add(rbShields6Cells);
+            cellShields.Controls.Add(rbShields8Cells);
+            cellShields.Location = new Point(10, 136);
+            cellShields.Name = "cellShields";
+            cellShields.Size = new Size(92, 138);
+            cellShields.TabIndex = 4;
+            // 
+            // rbShields4Cells
+            // 
+            rbShields4Cells.AutoSize = true;
+            rbShields4Cells.Location = new Point(3, 21);
+            rbShields4Cells.Name = "rbShields4Cells";
+            rbShields4Cells.Size = new Size(67, 24);
+            rbShields4Cells.TabIndex = 0;
+            rbShields4Cells.TabStop = true;
+            rbShields4Cells.Text = "4 Cell";
+            rbShields4Cells.UseVisualStyleBackColor = true;
+            rbShields4Cells.CheckedChanged += rbShields_CellsCheckedChanged;
+            // 
+            // rbShields6Cells
+            // 
+            rbShields6Cells.AutoSize = true;
+            rbShields6Cells.Location = new Point(3, 51);
+            rbShields6Cells.Name = "rbShields6Cells";
+            rbShields6Cells.Size = new Size(81, 24);
+            rbShields6Cells.TabIndex = 1;
+            rbShields6Cells.TabStop = true;
+            rbShields6Cells.Text = "4-6 Cell";
+            rbShields6Cells.UseVisualStyleBackColor = true;
+            rbShields6Cells.CheckedChanged += rbShields_CellsCheckedChanged;
+            // 
+            // rbShields8Cells
+            // 
+            rbShields8Cells.AutoSize = true;
+            rbShields8Cells.Location = new Point(3, 81);
+            rbShields8Cells.Name = "rbShields8Cells";
+            rbShields8Cells.Size = new Size(81, 24);
+            rbShields8Cells.TabIndex = 2;
+            rbShields8Cells.TabStop = true;
+            rbShields8Cells.Text = "4-8 Cell";
+            rbShields8Cells.UseVisualStyleBackColor = true;
+            rbShields8Cells.CheckedChanged += rbShields_CellsCheckedChanged;
             // 
             // rbShieldsOff
             // 
@@ -335,7 +394,7 @@
             groupBoots.Controls.Add(rbBootsChaos);
             groupBoots.Controls.Add(rbBootsAny);
             groupBoots.Controls.Add(rbBootsDivine);
-            groupBoots.Location = new Point(467, 75);
+            groupBoots.Location = new Point(12, 219);
             groupBoots.Name = "groupBoots";
             groupBoots.Size = new Size(85, 138);
             groupBoots.TabIndex = 4;
@@ -396,7 +455,7 @@
             groupHelmets.Controls.Add(rbHelmetsChaos);
             groupHelmets.Controls.Add(rbHelmetsAny);
             groupHelmets.Controls.Add(rbHelmetsDivine);
-            groupHelmets.Location = new Point(558, 75);
+            groupHelmets.Location = new Point(103, 219);
             groupHelmets.Name = "groupHelmets";
             groupHelmets.Size = new Size(85, 138);
             groupHelmets.TabIndex = 7;
@@ -457,7 +516,7 @@
             groupGloves.Controls.Add(rbGlovesChaos);
             groupGloves.Controls.Add(rbGlovesAny);
             groupGloves.Controls.Add(rbGlovesDivine);
-            groupGloves.Location = new Point(649, 75);
+            groupGloves.Location = new Point(194, 219);
             groupGloves.Name = "groupGloves";
             groupGloves.Size = new Size(85, 138);
             groupGloves.TabIndex = 8;
@@ -518,7 +577,7 @@
             groupBody.Controls.Add(rbBodyChaos);
             groupBody.Controls.Add(rbBodyAny);
             groupBody.Controls.Add(rbBodyDivine);
-            groupBody.Location = new Point(740, 75);
+            groupBody.Location = new Point(285, 219);
             groupBody.Name = "groupBody";
             groupBody.Size = new Size(85, 138);
             groupBody.TabIndex = 9;
@@ -579,9 +638,10 @@
             groupWeapons.Controls.Add(rbWeaponsChaos);
             groupWeapons.Controls.Add(rbWeaponsAny);
             groupWeapons.Controls.Add(rbWeaponsDivine);
-            groupWeapons.Location = new Point(376, 75);
+            groupWeapons.Controls.Add(cellWeapons);
+            groupWeapons.Location = new Point(490, 75);
             groupWeapons.Name = "groupWeapons";
-            groupWeapons.Size = new Size(85, 138);
+            groupWeapons.Size = new Size(108, 282);
             groupWeapons.TabIndex = 7;
             groupWeapons.TabStop = false;
             groupWeapons.Text = "Weapons";
@@ -634,13 +694,73 @@
             rbWeaponsDivine.UseVisualStyleBackColor = true;
             rbWeaponsDivine.CheckedChanged += rbWeapons_CheckedChanged;
             // 
+            // cellWeapons
+            // 
+            cellWeapons.BackColor = SystemColors.ControlLight;
+            cellWeapons.Controls.Add(rbWeapons3Cells);
+            cellWeapons.Controls.Add(rbWeapons4Cells);
+            cellWeapons.Controls.Add(rbWeapons6Cells);
+            cellWeapons.Controls.Add(rbWeapons8Cells);
+            cellWeapons.Location = new Point(10, 136);
+            cellWeapons.Name = "cellWeapons";
+            cellWeapons.Size = new Size(92, 138);
+            cellWeapons.TabIndex = 5;
+            // 
+            // rbWeapons3Cells
+            // 
+            rbWeapons3Cells.AutoSize = true;
+            rbWeapons3Cells.Location = new Point(3, 8);
+            rbWeapons3Cells.Name = "rbWeapons3Cells";
+            rbWeapons3Cells.Size = new Size(67, 24);
+            rbWeapons3Cells.TabIndex = 0;
+            rbWeapons3Cells.TabStop = true;
+            rbWeapons3Cells.Text = "3 Cell";
+            rbWeapons3Cells.UseVisualStyleBackColor = true;
+            rbWeapons3Cells.CheckedChanged += rbWeapons_CellsCheckedChanged;
+            // 
+            // rbWeapons4Cells
+            // 
+            rbWeapons4Cells.AutoSize = true;
+            rbWeapons4Cells.Location = new Point(3, 38);
+            rbWeapons4Cells.Name = "rbWeapons4Cells";
+            rbWeapons4Cells.Size = new Size(81, 24);
+            rbWeapons4Cells.TabIndex = 1;
+            rbWeapons4Cells.TabStop = true;
+            rbWeapons4Cells.Text = "3-4 Cell";
+            rbWeapons4Cells.UseVisualStyleBackColor = true;
+            rbWeapons4Cells.CheckedChanged += rbWeapons_CellsCheckedChanged;
+            // 
+            // rbWeapons6Cells
+            // 
+            rbWeapons6Cells.AutoSize = true;
+            rbWeapons6Cells.Location = new Point(3, 68);
+            rbWeapons6Cells.Name = "rbWeapons6Cells";
+            rbWeapons6Cells.Size = new Size(81, 24);
+            rbWeapons6Cells.TabIndex = 2;
+            rbWeapons6Cells.TabStop = true;
+            rbWeapons6Cells.Text = "3-6 Cell";
+            rbWeapons6Cells.UseVisualStyleBackColor = true;
+            rbWeapons6Cells.CheckedChanged += rbWeapons_CellsCheckedChanged;
+            // 
+            // rbWeapons8Cells
+            // 
+            rbWeapons8Cells.AutoSize = true;
+            rbWeapons8Cells.Location = new Point(3, 98);
+            rbWeapons8Cells.Name = "rbWeapons8Cells";
+            rbWeapons8Cells.Size = new Size(81, 24);
+            rbWeapons8Cells.TabIndex = 3;
+            rbWeapons8Cells.TabStop = true;
+            rbWeapons8Cells.Text = "3-8 Cell";
+            rbWeapons8Cells.UseVisualStyleBackColor = true;
+            rbWeapons8Cells.CheckedChanged += rbWeapons_CellsCheckedChanged;
+            // 
             // labelFilePath
             // 
             labelFilePath.AutoSize = true;
             labelFilePath.Location = new Point(12, 25);
             labelFilePath.MinimumSize = new Size(450, 0);
             labelFilePath.Name = "labelFilePath";
-            labelFilePath.Size = new Size(620, 20);
+            labelFilePath.Size = new Size(605, 20);
             labelFilePath.TabIndex = 10;
             labelFilePath.Text = "C:\\Users\\tuba\\Documents\\My Games\\Path of Exile\\NeverSink's filter - 4-VERY-STRICT.filter";
             // 
@@ -648,7 +768,7 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(832, 246);
+            ClientSize = new Size(647, 377);
             Controls.Add(labelFilePath);
             Controls.Add(groupWeapons);
             Controls.Add(groupBody);
@@ -667,6 +787,8 @@
             groupAmulets.PerformLayout();
             groupShields.ResumeLayout(false);
             groupShields.PerformLayout();
+            cellShields.ResumeLayout(false);
+            cellShields.PerformLayout();
             groupBelts.ResumeLayout(false);
             groupBelts.PerformLayout();
             groupBoots.ResumeLayout(false);
@@ -679,6 +801,8 @@
             groupBody.PerformLayout();
             groupWeapons.ResumeLayout(false);
             groupWeapons.PerformLayout();
+            cellWeapons.ResumeLayout(false);
+            cellWeapons.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -731,5 +855,14 @@
         private RadioButton rbWeaponsAny;
         private RadioButton rbWeaponsDivine;
         private Label labelFilePath;
+        private Panel cellShields;
+        private RadioButton rbShields4Cells;
+        private RadioButton rbShields6Cells;
+        private RadioButton rbShields8Cells;
+        private Panel cellWeapons;
+        private RadioButton rbWeapons3Cells;
+        private RadioButton rbWeapons4Cells;
+        private RadioButton rbWeapons6Cells;
+        private RadioButton rbWeapons8Cells;
     }
 }
