@@ -473,8 +473,10 @@ namespace PoeFilterConfigure
             }
 
             sb.AppendLine("\tSetFontSize 45");
-            sb.AppendLine("\tMinimapIcon 2 Grey Diamond");
-            sb.AppendLine("\tSetBackgroundColor 132 86 60 255");
+            sb.AppendLine("\tMinimapIcon 2 Purple Diamond");
+            sb.AppendLine("\tSetTextColor 0 0 0 255");
+            sb.AppendLine("\tSetBorderColor 0 0 0 255");
+            sb.AppendLine("\tSetBackgroundColor 153 102 204 255");
         }
 
         private void SplitFile(FileInfo fileInfo, out string beforeLine, out string lineAndAfter)
