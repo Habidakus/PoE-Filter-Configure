@@ -1,5 +1,6 @@
 #pragma warning disable IDE1006 // Naming Styles
 
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 
@@ -19,7 +20,7 @@ namespace PoeFilterConfigure
                 { rbShields8Cells, new CellsSelection(4, 8) },
             };
 
-            Dictionary<RadioButton, CellsSelection> weaponCellSelection = new() 
+            Dictionary<RadioButton, CellsSelection> weaponCellSelection = new()
             {
                 { rbWeapons3Cells, new CellsSelection(3, 3) },
                 { rbWeapons4Cells, new CellsSelection(3, 4) },
@@ -45,6 +46,8 @@ namespace PoeFilterConfigure
                     new CheckboxGroup(this, EquipmentClass.Weapons, rbWeaponsAny, rbWeaponsChaos, rbWeaponsDivine, rbWeaponsOff, weaponCellSelection)
                 },
             };
+
+            ResetGoal();
 
             ReadUserProfile();
 
@@ -376,7 +379,7 @@ namespace PoeFilterConfigure
 
             var accessControl = fileInfo.GetAccessControl();
             string accountName = WindowsIdentity.GetCurrent().Name;
-            System.Security.AccessControl.FileSystemAccessRule rule = 
+            System.Security.AccessControl.FileSystemAccessRule rule =
                 new System.Security.AccessControl.FileSystemAccessRule(
                     accountName,
                     System.Security.AccessControl.FileSystemRights.Modify,
@@ -451,6 +454,7 @@ namespace PoeFilterConfigure
             }
 
             sb.AppendLine("\tRarity Rare");
+            sb.AppendLine("\tIdentified False");
             sb.AppendLine($"\tClass == {classText}");
 
             if (dimensions != null)
@@ -803,7 +807,168 @@ namespace PoeFilterConfigure
             {
                 m_checkboxGroups[EquipmentClass.Weapons].OnCellsCheck(rb);
             }
+        }
 
+        private float _etaGoal = 0;
+        private float? _firstData = null;
+        private float? _latestData = null;
+        private DateTime _firstDataTime;
+        private DateTime _latestDataTime;
+
+        private void textBoxGoal_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData != Keys.Enter)
+            {
+                return;
+            }
+
+            if (float.TryParse(textBoxGoal.Text, out float goal))
+            {
+                _etaGoal = goal;
+                textBoxGoal.Hide();
+                label2.Hide();
+
+                textBoxUpdate.Text = string.Empty;
+                textBoxUpdate.Show();
+                label6.Show();
+
+                lblGoal.Text = goal.ToString();
+                lblGoal.Show();
+                label5.Show();
+
+                buttonResetETA.Show();
+
+                _firstData = null;
+                _latestData = null;
+
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+            else
+            {
+                //System.Media.SystemSounds.Asterisk.Play();
+                textBoxGoal.Text = string.Empty;
+            }
+        }
+
+        private void textBoxUpdate_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData != Keys.Enter)
+            {
+                return;
+            }
+
+            if (float.TryParse(textBoxUpdate.Text, out float value))
+            {
+                textBoxUpdate.Text = string.Empty;
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+            else
+            {
+                textBoxUpdate.Text = string.Empty;
+                return;
+            }
+
+            lblLastUpdate.Text = value.ToString();
+            lblLastUpdate.Show();
+            label3.Show();
+
+            if (_firstData == null)
+            {
+                _firstData = value;
+                _firstDataTime = DateTime.Now;
+                return;
+            }
+
+            label1.Show();
+            label4.Show();
+            lblRate.Show();
+            lblETA.Show();
+
+            _latestData = value;
+            _latestDataTime = DateTime.Now;
+
+            TimeSpan duration = _latestDataTime - _firstDataTime;
+            if (duration == TimeSpan.Zero)
+                return;
+
+            float growth = (float)_latestData - (float)_firstData;
+            float ratePerSecond = growth / (float)duration.TotalSeconds;
+            //lblRate.Text = $"Duration={duration.TotalSeconds}  Growth={growth}  ratePerSecond={ratePerSecond}";
+            if (ratePerSecond < (1f / 3600f))
+            {
+                lblRate.Text = $"{ratePerSecond * (24f * 3600f)} / day";
+            }
+            else if (ratePerSecond < (1f / 60f))
+            {
+                lblRate.Text = $"{ratePerSecond * 3600f:F1} / hour";
+            }
+            else if (ratePerSecond < 1f)
+            {
+                lblRate.Text = $"{ratePerSecond * 60f:F1} / min";
+            }
+            else
+            {
+                lblRate.Text = $"{ratePerSecond:F1} / sec";
+            }
+
+            if (ratePerSecond == 0f)
+            {
+                return;
+            }
+
+            float remaining = _etaGoal - (float)_latestData;
+            float secondsToGoal = remaining / ratePerSecond;
+
+            //lblETA.Text = $"remaining={remaining}  secondsToGoal={secondsToGoal}";
+            if (secondsToGoal < 0f)
+            {
+                lblETA.Text = "Achieved";
+                return;
+            }
+
+            if (secondsToGoal < 90f)
+            {
+                lblETA.Text = $"{Math.Round(secondsToGoal)} seconds";
+                return;
+            }
+
+            if (secondsToGoal < 3600f)
+            {
+                lblETA.Text = $"{Math.Round(secondsToGoal / 60f)} minutes";
+                return;
+            }
+
+            DateTime when = DateTime.Now + TimeSpan.FromSeconds(secondsToGoal);
+            lblETA.Text = when.ToString();
+        }
+
+        private void buttonResetETA_Click(object sender, EventArgs e)
+        {
+            ResetGoal();
+        }
+
+        private void ResetGoal()
+        {
+            lblGoal.Hide();
+            lblETA.Hide();
+            lblLastUpdate.Hide();
+            lblRate.Hide();
+            label1.Hide();
+            label3.Hide();
+            label4.Hide();
+            label5.Hide();
+
+            textBoxGoal.Text = string.Empty;
+            textBoxGoal.Show();
+            label2.Show();
+
+            textBoxUpdate.Text = string.Empty;
+            textBoxUpdate.Hide();
+            label6.Hide();
+
+            buttonResetETA.Hide();
         }
     }
 }
