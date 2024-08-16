@@ -941,6 +941,18 @@ namespace PoeFilterConfigure
             }
 
             DateTime when = DateTime.Now + TimeSpan.FromSeconds(secondsToGoal);
+            if (secondsToGoal < 3600 * 12 || when.Day == DateTime.Now.Day)
+            {
+                lblETA.Text = $"{when.ToShortTimeString()}";
+                return;
+            }
+
+            if (secondsToGoal < 3600 * 24 * 5)
+            {
+                lblETA.Text = $"{when.DayOfWeek} {when.ToShortTimeString()}";
+                return;
+            }
+
             lblETA.Text = when.ToString();
         }
 
