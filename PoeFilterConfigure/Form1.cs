@@ -1,6 +1,5 @@
 #pragma warning disable IDE1006 // Naming Styles
 
-using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 
@@ -8,6 +7,9 @@ namespace PoeFilterConfigure
 {
     public partial class Form1 : Form
     {
+        DateTime _when = DateTime.MinValue;
+        bool _focusOnGoal = false;
+
         public Form1()
         {
             m_initializing = true;
@@ -50,6 +52,12 @@ namespace PoeFilterConfigure
             ResetGoal();
 
             ReadUserProfile();
+
+
+            System.Windows.Forms.Timer etaTimer = new();
+            etaTimer.Interval = 1000 / 30; // 30 times a second
+            etaTimer.Tick += new EventHandler(OnEtaTimer);
+            etaTimer.Start();
 
             AllowDrop = true;
             DragEnter += new DragEventHandler(DragEnterHandler);
@@ -843,11 +851,14 @@ namespace PoeFilterConfigure
 
                 e.Handled = true;
                 e.SuppressKeyPress = true;
+
+                textBoxUpdate.Focus();
             }
             else
             {
                 //System.Media.SystemSounds.Asterisk.Play();
                 textBoxGoal.Text = string.Empty;
+                textBoxGoal.Focus();
             }
         }
 
@@ -884,7 +895,8 @@ namespace PoeFilterConfigure
             label1.Show();
             label4.Show();
             lblRate.Show();
-            lblETA.Show();
+            lblETA_duration.Show();
+            lblETA_time.Show();
 
             _latestData = value;
             _latestDataTime = DateTime.Now;
@@ -921,39 +933,82 @@ namespace PoeFilterConfigure
             float remaining = _etaGoal - (float)_latestData;
             float secondsToGoal = remaining / ratePerSecond;
 
-            //lblETA.Text = $"remaining={remaining}  secondsToGoal={secondsToGoal}";
-            if (secondsToGoal < 0f)
+            _when = DateTime.Now + TimeSpan.FromSeconds(secondsToGoal);
+            UpdateETADisplay();
+        }
+
+        private void OnEtaTimer(Object myObject, EventArgs myEventArgs)
+        {
+            UpdateETADisplay();
+
+            if (_focusOnGoal)
             {
-                lblETA.Text = "Achieved";
+                if (textBoxGoal.Visible)
+                {
+                    textBoxGoal.Focus();
+                }
+
+                _focusOnGoal = false;
+            }
+        }
+
+        private void UpdateETADisplay()
+        {
+            if (_when == DateTime.MinValue)
+            {
+                lblETA_duration.Hide();
+                lblETA_time.Hide();
                 return;
             }
 
-            if (secondsToGoal < 90f)
+            lblETA_duration.Show();
+
+            DateTime now = DateTime.Now;
+            if (_when <= now)
             {
-                lblETA.Text = $"{Math.Round(secondsToGoal)} seconds";
+                lblETA_duration.Text = "Achieved";
+                lblETA_time.Hide();
                 return;
             }
 
-            if (secondsToGoal < 3600f)
+            lblETA_time.Show();
+
+            double secondsToGoal = (_when - now).TotalSeconds;
+            if (_when.Day == now.Day)
             {
-                lblETA.Text = $"{Math.Round(secondsToGoal / 60f)} minutes";
-                return;
+                lblETA_time.Text = $"{_when.ToShortTimeString()}";
+            }
+            else if (secondsToGoal < 3600 * 24 * 5)
+            {
+                lblETA_time.Text = $"{_when.DayOfWeek} {_when.ToShortTimeString()}";
+            }
+            else
+            {
+                lblETA_time.Text = _when.ToString();
             }
 
-            DateTime when = DateTime.Now + TimeSpan.FromSeconds(secondsToGoal);
-            if (secondsToGoal < 3600 * 12 || when.Day == DateTime.Now.Day)
+            if (secondsToGoal < 90.0)
             {
-                lblETA.Text = $"{when.ToShortTimeString()}";
-                return;
+                lblETA_duration.Text = $"{Math.Round(secondsToGoal)} seconds";
             }
-
-            if (secondsToGoal < 3600 * 24 * 5)
+            else if (secondsToGoal < 3600.0)
             {
-                lblETA.Text = $"{when.DayOfWeek} {when.ToShortTimeString()}";
-                return;
+                int min = (int)secondsToGoal / 60;
+                int sec = (int)Math.Round(secondsToGoal - (min * 60));
+                lblETA_duration.Text = $"{min}m {sec}s";
             }
-
-            lblETA.Text = when.ToString();
+            else if (secondsToGoal < 3600 * 36)
+            {
+                int hrs = (int)secondsToGoal / 3600;
+                int sec = (int)Math.Round(secondsToGoal - (hrs * 3600));
+                lblETA_duration.Text = $"{hrs}h {sec / 60}m";
+            }
+            else
+            {
+                int days = (int)secondsToGoal / (24 * 3600);
+                int sec = (int)Math.Round(secondsToGoal - (days * 24 * 3600));
+                lblETA_duration.Text = $"{days} days {sec / 3600} hours";
+            }
         }
 
         private void buttonResetETA_Click(object sender, EventArgs e)
@@ -963,8 +1018,10 @@ namespace PoeFilterConfigure
 
         private void ResetGoal()
         {
+            _when = DateTime.MinValue;
             lblGoal.Hide();
-            lblETA.Hide();
+            lblETA_time.Hide();
+            lblETA_duration.Hide();
             lblLastUpdate.Hide();
             lblRate.Hide();
             label1.Hide();
@@ -981,6 +1038,11 @@ namespace PoeFilterConfigure
             label6.Hide();
 
             buttonResetETA.Hide();
+        }
+
+        private void tabControl1_Selected(object sender, TabControlEventArgs e)
+        {
+            _focusOnGoal = true;
         }
     }
 }

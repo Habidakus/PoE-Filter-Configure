@@ -87,6 +87,7 @@
             rbRingAny = new RadioButton();
             rbRingDivine = new RadioButton();
             tabPage2 = new TabPage();
+            lblETA_time = new Label();
             textBoxUpdate = new TextBox();
             label6 = new Label();
             textBoxGoal = new TextBox();
@@ -97,7 +98,7 @@
             label3 = new Label();
             lblRate = new Label();
             label4 = new Label();
-            lblETA = new Label();
+            lblETA_duration = new Label();
             label1 = new Label();
             buttonResetETA = new Button();
             tabControl1.SuspendLayout();
@@ -125,6 +126,7 @@
             tabControl1.SelectedIndex = 0;
             tabControl1.Size = new Size(680, 359);
             tabControl1.TabIndex = 11;
+            tabControl1.Selected += tabControl1_Selected;
             // 
             // tabPage1
             // 
@@ -816,6 +818,7 @@
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(lblETA_time);
             tabPage2.Controls.Add(textBoxUpdate);
             tabPage2.Controls.Add(label6);
             tabPage2.Controls.Add(textBoxGoal);
@@ -826,7 +829,7 @@
             tabPage2.Controls.Add(label3);
             tabPage2.Controls.Add(lblRate);
             tabPage2.Controls.Add(label4);
-            tabPage2.Controls.Add(lblETA);
+            tabPage2.Controls.Add(lblETA_duration);
             tabPage2.Controls.Add(label1);
             tabPage2.Controls.Add(buttonResetETA);
             tabPage2.Location = new Point(4, 29);
@@ -836,6 +839,16 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "ETAs";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // lblETA_time
+            // 
+            lblETA_time.AutoSize = true;
+            lblETA_time.Location = new Point(114, 221);
+            lblETA_time.Name = "lblETA_time";
+            lblETA_time.Size = new Size(51, 20);
+            lblETA_time.TabIndex = 13;
+            lblETA_time.Text = "(soon)";
+            lblETA_time.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // textBoxUpdate
             // 
@@ -933,15 +946,15 @@
             label4.Text = "Rate:";
             label4.TextAlign = ContentAlignment.MiddleRight;
             // 
-            // lblETA
+            // lblETA_duration
             // 
-            lblETA.AutoSize = true;
-            lblETA.Location = new Point(114, 201);
-            lblETA.Name = "lblETA";
-            lblETA.Size = new Size(51, 20);
-            lblETA.TabIndex = 2;
-            lblETA.Text = "(soon)";
-            lblETA.TextAlign = ContentAlignment.MiddleLeft;
+            lblETA_duration.AutoSize = true;
+            lblETA_duration.Location = new Point(114, 201);
+            lblETA_duration.Name = "lblETA_duration";
+            lblETA_duration.Size = new Size(51, 20);
+            lblETA_duration.TabIndex = 2;
+            lblETA_duration.Text = "(soon)";
+            lblETA_duration.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // label1
             // 
@@ -1061,7 +1074,7 @@
         private RadioButton rbRingDivine;
         private TabPage tabPage2;
         private Label labelFilePath;
-        private Label lblETA;
+        private Label lblETA_duration;
         private Label label1;
         private Button buttonResetETA;
         private Label lblRate;
@@ -1074,5 +1087,6 @@
         private Label label3;
         private TextBox textBoxUpdate;
         private Label label6;
+        private Label lblETA_time;
     }
 }
