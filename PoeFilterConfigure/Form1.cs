@@ -897,6 +897,8 @@ namespace PoeFilterConfigure
             lblRate.Show();
             lblETA_duration.Show();
             lblETA_time.Show();
+            lblETA_estimateValue.Show();
+            lblETA_evText.Show();
 
             _latestData = value;
             _latestDataTime = DateTime.Now;
@@ -937,7 +939,7 @@ namespace PoeFilterConfigure
             UpdateETADisplay();
         }
 
-        private void OnEtaTimer(Object myObject, EventArgs myEventArgs)
+        private void OnEtaTimer(Object? myObject, EventArgs myEventArgs)
         {
             UpdateETADisplay();
 
@@ -958,12 +960,29 @@ namespace PoeFilterConfigure
             {
                 lblETA_duration.Hide();
                 lblETA_time.Hide();
+                lblETA_estimateValue.Hide();
+                lblETA_evText.Hide();
+
                 return;
             }
 
             lblETA_duration.Show();
 
             DateTime now = DateTime.Now;
+            TimeSpan duration = _latestDataTime - _firstDataTime;
+            if (duration > TimeSpan.Zero && _latestData != null && _firstData != null)
+            {
+                float growth = (float)_latestData - (float)_firstData;
+                float ratePerSecond = growth / (float)duration.TotalSeconds;
+
+                double secondsSinceLatestData = (now - _latestDataTime).TotalSeconds;
+                double currentEstimate = (float)_latestData + ratePerSecond * secondsSinceLatestData;
+
+                lblETA_evText.Show();
+                lblETA_estimateValue.Show();
+                lblETA_estimateValue.Text = $"{Math.Floor(currentEstimate)}";
+            }
+
             if (_when <= now)
             {
                 lblETA_duration.Text = "Achieved";
@@ -1022,6 +1041,8 @@ namespace PoeFilterConfigure
             lblGoal.Hide();
             lblETA_time.Hide();
             lblETA_duration.Hide();
+            lblETA_estimateValue.Hide();
+            lblETA_evText.Hide();
             lblLastUpdate.Hide();
             lblRate.Hide();
             label1.Hide();

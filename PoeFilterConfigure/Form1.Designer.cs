@@ -87,6 +87,8 @@
             rbRingAny = new RadioButton();
             rbRingDivine = new RadioButton();
             tabPage2 = new TabPage();
+            lblETA_evText = new Label();
+            lblETA_estimateValue = new Label();
             lblETA_time = new Label();
             textBoxUpdate = new TextBox();
             label6 = new Label();
@@ -818,6 +820,8 @@
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(lblETA_evText);
+            tabPage2.Controls.Add(lblETA_estimateValue);
             tabPage2.Controls.Add(lblETA_time);
             tabPage2.Controls.Add(textBoxUpdate);
             tabPage2.Controls.Add(label6);
@@ -839,6 +843,26 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "ETAs";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // lblETA_evText
+            // 
+            lblETA_evText.AutoSize = true;
+            lblETA_evText.Location = new Point(34, 241);
+            lblETA_evText.Name = "lblETA_evText";
+            lblETA_evText.Size = new Size(74, 20);
+            lblETA_evText.TabIndex = 15;
+            lblETA_evText.Text = "Est. Value:";
+            lblETA_evText.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // lblETA_estimateValue
+            // 
+            lblETA_estimateValue.AutoSize = true;
+            lblETA_estimateValue.Location = new Point(114, 241);
+            lblETA_estimateValue.Name = "lblETA_estimateValue";
+            lblETA_estimateValue.Size = new Size(51, 20);
+            lblETA_estimateValue.TabIndex = 14;
+            lblETA_estimateValue.Text = "(soon)";
+            lblETA_estimateValue.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblETA_time
             // 
@@ -1088,5 +1112,7 @@
         private TextBox textBoxUpdate;
         private Label label6;
         private Label lblETA_time;
+        private Label lblETA_evText;
+        private Label lblETA_estimateValue;
     }
 }
