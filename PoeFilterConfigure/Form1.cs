@@ -7,7 +7,7 @@ namespace PoeFilterConfigure
 {
     public partial class Form1 : Form
     {
-        DateTime _when = DateTime.MinValue;
+        //DateTime _when = DateTime.MinValue;
         bool _focusOnGoal = false;
 
         public Form1()
@@ -817,11 +817,10 @@ namespace PoeFilterConfigure
             }
         }
 
-        private float _etaGoal = 0;
+        private float _goal = 0;
+        private AdaptiveETA? _adaptiveEta = null;
         private float? _firstData = null;
         private float? _latestData = null;
-        private DateTime _firstDataTime;
-        private DateTime _latestDataTime;
 
         private void textBoxGoal_KeyDown(object sender, KeyEventArgs e)
         {
@@ -832,7 +831,8 @@ namespace PoeFilterConfigure
 
             if (float.TryParse(textBoxGoal.Text, out float goal))
             {
-                _etaGoal = goal;
+                _goal = goal;
+                _adaptiveEta = new AdaptiveETA(goal);
                 textBoxGoal.Hide();
                 label2.Hide();
 
@@ -885,10 +885,13 @@ namespace PoeFilterConfigure
             lblLastUpdate.Show();
             label3.Show();
 
+            if (_adaptiveEta == null)
+                throw new Exception("Why isn't adaptive eta initialized?");
+            _adaptiveEta.Add(value);
+
             if (_firstData == null)
             {
                 _firstData = value;
-                _firstDataTime = DateTime.Now;
                 return;
             }
 
@@ -901,41 +904,7 @@ namespace PoeFilterConfigure
             lblETA_evText.Show();
 
             _latestData = value;
-            _latestDataTime = DateTime.Now;
 
-            TimeSpan duration = _latestDataTime - _firstDataTime;
-            if (duration == TimeSpan.Zero)
-                return;
-
-            float growth = (float)_latestData - (float)_firstData;
-            float ratePerSecond = growth / (float)duration.TotalSeconds;
-            //lblRate.Text = $"Duration={duration.TotalSeconds}  Growth={growth}  ratePerSecond={ratePerSecond}";
-            if (ratePerSecond < (1f / 3600f))
-            {
-                lblRate.Text = $"{ratePerSecond * (24f * 3600f)} / day";
-            }
-            else if (ratePerSecond < (1f / 60f))
-            {
-                lblRate.Text = $"{ratePerSecond * 3600f:F1} / hour";
-            }
-            else if (ratePerSecond < 1f)
-            {
-                lblRate.Text = $"{ratePerSecond * 60f:F1} / min";
-            }
-            else
-            {
-                lblRate.Text = $"{ratePerSecond:F1} / sec";
-            }
-
-            if (ratePerSecond == 0f)
-            {
-                return;
-            }
-
-            float remaining = _etaGoal - (float)_latestData;
-            float secondsToGoal = remaining / ratePerSecond;
-
-            _when = DateTime.Now + TimeSpan.FromSeconds(secondsToGoal);
             UpdateETADisplay();
         }
 
@@ -956,34 +925,56 @@ namespace PoeFilterConfigure
 
         private void UpdateETADisplay()
         {
-            if (_when == DateTime.MinValue)
+            if (_adaptiveEta == null)
+                return;
+
+            DateTime now = DateTime.Now;
+            (double currentEstimate, DateTime when, double ratePerSecond) = _adaptiveEta.GetEstimate(now);
+
+            if (currentEstimate == double.NaN)
+            {
+                lblETA_estimateValue.Hide();
+                lblETA_evText.Hide();
+            }
+            else
+            {
+                lblETA_evText.Show();
+                lblETA_estimateValue.Show();
+                lblETA_estimateValue.Text = $"{Math.Floor(currentEstimate)}";
+            }
+
+            if (ratePerSecond == double.NaN)
+            {
+                lblRate.Text = $"-na-";
+            }
+            else if (ratePerSecond < (1f / 3600f))
+            {
+                lblRate.Text = $"{ratePerSecond * (24f * 3600f)} / day";
+            }
+            else if (ratePerSecond < (1f / 60f))
+            {
+                lblRate.Text = $"{ratePerSecond * 3600f:F1} / hour";
+            }
+            else if (ratePerSecond < 1f)
+            {
+                lblRate.Text = $"{ratePerSecond * 60f:F1} / min";
+            }
+            else
+            {
+                lblRate.Text = $"{ratePerSecond:F1} / sec";
+            }
+
+            if (when == DateTime.MinValue || when == DateTime.MaxValue)
             {
                 lblETA_duration.Hide();
                 lblETA_time.Hide();
-                lblETA_estimateValue.Hide();
-                lblETA_evText.Hide();
 
                 return;
             }
 
             lblETA_duration.Show();
 
-            DateTime now = DateTime.Now;
-            TimeSpan duration = _latestDataTime - _firstDataTime;
-            if (duration > TimeSpan.Zero && _latestData != null && _firstData != null)
-            {
-                float growth = (float)_latestData - (float)_firstData;
-                float ratePerSecond = growth / (float)duration.TotalSeconds;
-
-                double secondsSinceLatestData = (now - _latestDataTime).TotalSeconds;
-                double currentEstimate = (float)_latestData + ratePerSecond * secondsSinceLatestData;
-
-                lblETA_evText.Show();
-                lblETA_estimateValue.Show();
-                lblETA_estimateValue.Text = $"{Math.Floor(currentEstimate)}";
-            }
-
-            if (_when <= now)
+            if (when <= now)
             {
                 lblETA_duration.Text = "Achieved";
                 lblETA_time.Hide();
@@ -992,18 +983,18 @@ namespace PoeFilterConfigure
 
             lblETA_time.Show();
 
-            double secondsToGoal = (_when - now).TotalSeconds;
-            if (_when.Day == now.Day)
+            double secondsToGoal = (when - now).TotalSeconds;
+            if (when.Day == now.Day)
             {
-                lblETA_time.Text = $"{_when.ToShortTimeString()}";
+                lblETA_time.Text = $"{when.ToShortTimeString()}";
             }
             else if (secondsToGoal < 3600 * 24 * 5)
             {
-                lblETA_time.Text = $"{_when.DayOfWeek} {_when.ToShortTimeString()}";
+                lblETA_time.Text = $"{when.DayOfWeek} {when.ToShortTimeString()}";
             }
             else
             {
-                lblETA_time.Text = _when.ToString();
+                lblETA_time.Text = when.ToString();
             }
 
             if (secondsToGoal < 90.0)
@@ -1037,7 +1028,8 @@ namespace PoeFilterConfigure
 
         private void ResetGoal()
         {
-            _when = DateTime.MinValue;
+            _adaptiveEta = null;
+
             lblGoal.Hide();
             lblETA_time.Hide();
             lblETA_duration.Hide();
