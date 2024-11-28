@@ -19,7 +19,7 @@ namespace PoeFilterConfigure
             int smallestSpan = -1;
             for (int i = 1; i < 6; ++i)
             {
-                double logOfSpan = Math.Log((_dates[i + 1] - _dates[0]).Ticks) - Math.Log((_dates[i - 1] - _dates[0]).Ticks);
+                double logOfSpan = Math.Log((date - _dates[i - 1]).Ticks) - Math.Log((date - _dates[i + 1]).Ticks);
                 if (logOfSpan < smallestSpanLength)
                 {
                     smallestSpan = i;
@@ -27,7 +27,8 @@ namespace PoeFilterConfigure
                 }
             }
 
-            if (smallestSpanLength < Math.Log((date - _dates[0]).Ticks) - Math.Log((_dates[6] - _dates[0]).Ticks))
+            double logDistIfReplaceLastElement = Math.Log((date - _dates[5]).Ticks);
+            if (smallestSpanLength < logDistIfReplaceLastElement)
             {
                 return smallestSpan;
             }
